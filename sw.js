@@ -1,9 +1,9 @@
 /* Capitalism service worker - bump VERSION on every deploy */
-const VERSION = 'capitalism-v2';
+const VERSION = 'capitalism-v3';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './css/main.css',
-  './js/main.js', './js/ui.js', './js/sim.js', './js/map.js', './js/state.js', './js/data.js', './js/events.js', './js/util.js',
+  './js/main.js', './js/ui.js', './js/sim.js', './js/field.js', './js/state.js', './js/data.js', './js/events.js', './js/util.js',
   './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'
 ];
 self.addEventListener('install', (e) => {

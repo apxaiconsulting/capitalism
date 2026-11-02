@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Capitalism">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Capitalism - run an oil major, buy a congress, keep the country supplied. A strategy game about the oil century.">
+<meta name="description" content="Capitalism - drill it, sell it, buy the government. A strategy game about the oil century.">
 <title>Capitalism</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -18,73 +18,41 @@
 <body>
 
 <div id="app" hidden>
+  <div id="stage">
+    <canvas id="scene"></canvas>
 
-  <header id="hud">
-    <div class="hud-main">
-      <button id="btn-pause" class="hud-clock" aria-label="Pause or resume">
-        <span id="hud-date">1946</span>
-        <span id="hud-play" class="play-state">II</span>
-      </button>
-      <div class="speeds" role="group" aria-label="Game speed">
-        <button class="spd" data-speed="1">1&times;</button>
-        <button class="spd" data-speed="2">2&times;</button>
-        <button class="spd" data-speed="3">4&times;</button>
-      </div>
-      <button id="btn-next" class="btn sm">Next year &#9654;</button>
-      <div class="hud-cash">
-        <span id="hud-cash">$0</span>
-        <small id="hud-income">&nbsp;</small>
-      </div>
+    <div class="topbar">
+      <button class="pill" data-panel="menu">MENU</button>
+      <button class="pill big" data-panel="actions">ACTIONS</button>
+      <button class="pill" data-panel="stats">STATS</button>
     </div>
 
-    <div class="gauge-wrap" id="gauge-wrap">
-      <div class="gauge" id="gauge">
-        <div class="g-fill" id="g-fill"></div>
-        <div class="g-stock" id="g-stock"></div>
-        <div class="g-demand" id="g-demand"><i></i></div>
-      </div>
-      <div class="gauge-labels">
-        <span id="g-prod">Production 0</span>
-        <span id="g-note"></span>
-        <span id="g-dem">Demand 0</span>
-      </div>
+    <div id="ticker" class="ticker"></div>
+
+    <button id="globe" class="globe" aria-label="World map">
+      <span class="globe-face"></span>
+      <small id="globe-label">TEXAS</small>
+    </button>
+
+    <div class="readout">
+      <span class="r-item"><i>&#128176;</i><b id="r-cash">0</b></span>
+      <span class="r-item"><i>&#128738;</i><b id="r-oil">0</b></span>
+      <span class="r-item"><i>&#128167;</i><b id="r-add">0%</b></span>
+      <span class="r-item"><i>&#9881;</i><b id="r-gdp">0%</b></span>
+      <span class="r-year" id="r-year">1946</span>
+      <button id="r-play" class="r-play" aria-label="Advance a year">&#9654;</button>
     </div>
 
-    <div class="hud-stats" id="hud-stats"></div>
-  </header>
+    <div class="vgauge" id="vgauge" title="Production against demand">
+      <div class="vg-track"><div class="vg-fill" id="vg-fill"></div><div class="vg-line" id="vg-line"></div></div>
+      <small id="vg-note">0 / 0</small>
+    </div>
 
-  <main id="stage">
-    <section class="view active" id="view-field">
-      <div id="region-bar" class="region-bar"></div>
-      <div id="map-wrap">
-        <canvas id="map"></canvas>
-        <div id="map-hint" class="map-hint"></div>
-        <div class="map-tools">
-          <button id="btn-zoom-in" aria-label="Zoom in">+</button>
-          <button id="btn-zoom-out" aria-label="Zoom out">&minus;</button>
-          <button id="btn-center" aria-label="Recenter">&#9678;</button>
-        </div>
-        <div id="region-stats" class="region-stats"></div>
-      </div>
-    </section>
+    <div id="armed" class="armed" hidden></div>
+  </div>
 
-    <section class="view" id="view-world"><div class="scroll" id="world-body"></div></section>
-    <section class="view" id="view-capitol"><div class="scroll" id="capitol-body"></div></section>
-    <section class="view" id="view-rnd"><div class="scroll" id="rnd-body"></div></section>
-    <section class="view" id="view-hq"><div class="scroll" id="hq-body"></div></section>
-    <section class="view" id="view-intel"><div class="scroll" id="intel-body"></div></section>
-  </main>
-
-  <nav id="tabbar">
-    <button class="tab active" data-view="field"><span class="ti">&#9968;</span><span>Field</span></button>
-    <button class="tab" data-view="world"><span class="ti">&#128202;</span><span>World<i class="badge" id="badge-world"></i></span></button>
-    <button class="tab" data-view="capitol"><span class="ti">&#127963;</span><span>Capitol<i class="badge" id="badge-capitol"></i></span></button>
-    <button class="tab" data-view="rnd"><span class="ti">&#9881;</span><span>R&amp;D<i class="badge" id="badge-rnd"></i></span></button>
-    <button class="tab" data-view="hq"><span class="ti">&#127970;</span><span>HQ</span></button>
-    <button class="tab" data-view="intel"><span class="ti">&#128220;</span><span>Intel<i class="badge" id="badge-intel"></i></span></button>
-  </nav>
-
-  <div id="sheet" class="sheet" aria-live="polite"></div>
+  <div id="panel" class="panel"><div class="panel-in" id="panel-in"></div></div>
+  <div id="panel-scrim" class="panel-scrim"></div>
 </div>
 
 <div id="title-screen">
@@ -93,7 +61,7 @@
     <div class="gush"></div>
   </div>
   <h1>CAPITAL<span>ISM</span></h1>
-  <p class="tagline">Keep the country supplied. Buy the government. Outlive the planet.</p>
+  <p class="tagline">Drill it, sell it, buy the government.</p>
   <div id="title-menu"></div>
   <footer class="title-foot">
     <span>v<span id="v-num"></span></span> &middot;

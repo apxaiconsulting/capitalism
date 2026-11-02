@@ -1,70 +1,59 @@
 # Capitalism
 
-A browser strategy game about the oil century. You take over a private oil major in 1946 with
-one derrick in Texas, and the only number that matters is **national demand**: the red line on
-the gauge is what the country wants this year, the bar is what you can pump. Stay at or above
-the line, or the board finds someone hungrier.
+A browser strategy game about the oil century, built as a tribute to Molleindustria's
+*Oiligarchy* (2008). You take over an oil company in 1946 with one pump in Texas, and one number
+decides your career: **national demand**. The red line on the right of the screen is what the
+country wants this year; the bar under it is what you pump. Stay level with it, or the board
+finds somebody hungrier.
 
-Plays on iPhone, iPad and desktop. No dependencies, no build step, works offline, installable
-as a PWA.
+Plays on iPhone, iPad and desktop. No dependencies, no build step, installs as a PWA, works
+offline.
 
 **Play:** https://apxaiconsulting.github.io/capitalism/
 
-## The loop
+## What you do
 
-- **Field.** Each region is a map you cannot see into. Send an **exploration crew** to scan a
-  patch, then drill what it finds. Every field follows a Hubbert curve: flow decays once the
-  reservoir is half empty. Fracking brings dead fields back at half strength.
-- **World.** Demand is the economy multiplied by the country's **oil addiction**. You sell what
-  the country wants; anything above that goes to storage and then gets dumped at a discount,
-  which erodes the price. Anything below triggers a supply crisis.
-- **Capitol.** Ten representatives: **oiled** ones always vote your way, **green** ones never
-  do, gray ones flip a coin. Six votes carry a bill. Buying seats raises scandal, and every
-  election loosens about a third of them.
-- **Elections every ten years.** Fund a party's runner during the race. Give the winner enough
-  and the administration is **oiled**, which opens the room below the White House: the Iraq
-  invasion runs through "The Enemy Of My Enemy" and "Messing Up Their Economy" before Desert
-  Storm, or through the dossier after a major attack. Coups, blockade clearances and discredited
-  scientists are arranged in the same room.
-- **HQ.** Addiction programmes - light trucks, streetcar acquisition, cheap aviation, plastics,
-  manufactured doubt - permanently raise what the country needs. They raise your revenue and
-  your sentence at the same time.
-- **R&D.** Five branches over five decades: sonar and deepwater, fracking and automation,
-  K Street and media holdings, counsel and tax structures, and a Futures branch that ends with
-  orbital logistics and a methane lake on Titan.
+The screen is a cutaway: sky and hills on top, and the earth underneath with black pools in it.
 
-## Nine regions
+- **ACTIONS** gives you a crew or a rig. Pick one, then tap the ground.
+  - An **exploration crew** surveys a stretch of land and shows you the pools under it.
+  - An **oil derrick** drills straight down. If a pool is under it, it pumps. If not, you have
+    bought a hole.
+  - **Offshore rigs** for the water, **mercenaries** to keep the locals away from the wellheads,
+    and after the peak, a **human burner**, which needs no pool at all and whose feedstock
+    appendix nobody on the committee requests.
+- Pools run dry, and the flow falls away once a pool is half empty. That is the peak in
+  miniature, and it happens to the whole world too, about halfway through the century.
+- **The globe** travels: Texas, the Kuvik Refuge in Alaska, Rio Verde in Venezuela, the Okun
+  Delta in Nigeria, Al-Dhahir in Iraq, and a sea of methane on Titan.
+- **Washington** is a place you visit. Ten representatives decide your laws: oiled ones vote your
+  way, green ones never do, gray ones flip a coin, and six votes carry a bill. You can buy the
+  gray ones. Every ten years there is an election: fund a runner, and fund the winner enough that
+  the presidency comes out **oiled**, which opens the room below the White House. Wars are
+  arranged there, and Al-Dhahir opens no other way: arm the regime, break its economy, wait for
+  the invasion, then liberate it.
+- Pro-oil laws raise the country's **addiction**, which raises demand, which is both your market
+  and your sentence.
 
-Texas, the Kuvik Refuge in Alaska (needs an act of Congress), Rio Verde in Venezuela (land, sea
-and a nationalisation bill that keeps coming back), the Okun Delta in Nigeria (cheap concessions,
-blockades that start peaceful and do not stay that way), Al-Dhahir in Iraq (closed until a war
-opens it), plus the Gulf Shelf, the Caspian Basin, the Weddell Shelf in Antarctica, and Ligeia
-Mare on Titan.
+## The endings
 
-## Nine endings
-
-Fired, Mutually Assured Destruction at $300 a barrel, Retirement when the country finally needs
-less than a quarter of what it used to, Farewell West when the economy you fed collapses,
-Indicted, One Trillion Dollars, The Pivot, Ligeia Mare, and The Oil Century if you are still in
-the chair in 2051.
+Fired. Mutually Assured Destruction, at three hundred dollars a barrel. Retirement, if the
+country learns to want less of what you sell. Farewell West, if the economy you fed collapses.
+One Trillion Dollars. Ligeia Mare. And The Oil Century, if you are still in the chair in 2051.
 
 ## Running it
-
-Any static server:
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Then open `http://localhost:8080`. There is nothing to install or compile. For GitHub Pages,
-serve the repository root from the default branch.
+Open `http://localhost:8080`. Nothing to install or compile. For GitHub Pages, serve the
+repository root from the default branch.
 
 ## Credits
 
-Capitalism is an original game, written as a much larger tribute to **Oiligarchy** (2008) by
-**Molleindustria** (Paolo Pedercini), whose design - the demand line, the oiled Congress, the
-room below the White House, the human burners after the peak - this follows deliberately and
-expands on. No code or art from that game is used here, and all regions, politicians and
-companies are fictional.
+**Capitalism** is an original game. The demand line, the oiled Congress, the room below the White
+House and the human burners are *Oiligarchy*'s ideas, followed on purpose. No code or art from
+that game is used here, and every place, politician and company is fictional.
 
 Vanilla JavaScript, one canvas, no libraries.
