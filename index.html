@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a0c10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Capitalism">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Capitalism - run an oil major, buy a congress, keep the country supplied. A strategy game about the oil century.">
+<title>Capitalism</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div id="app" hidden>
+
+  <header id="hud">
+    <div class="hud-main">
+      <button id="btn-pause" class="hud-clock" aria-label="Pause or resume">
+        <span id="hud-date">1946</span>
+        <span id="hud-play" class="play-state">II</span>
+      </button>
+      <div class="speeds" role="group" aria-label="Game speed">
+        <button class="spd" data-speed="1">1&times;</button>
+        <button class="spd" data-speed="2">2&times;</button>
+        <button class="spd" data-speed="3">4&times;</button>
+      </div>
+      <button id="btn-next" class="btn sm">Next year &#9654;</button>
+      <div class="hud-cash">
+        <span id="hud-cash">$0</span>
+        <small id="hud-income">&nbsp;</small>
+      </div>
+    </div>
+
+    <div class="gauge-wrap" id="gauge-wrap">
+      <div class="gauge" id="gauge">
+        <div class="g-fill" id="g-fill"></div>
+        <div class="g-stock" id="g-stock"></div>
+        <div class="g-demand" id="g-demand"><i></i></div>
+      </div>
+      <div class="gauge-labels">
+        <span id="g-prod">Production 0</span>
+        <span id="g-note"></span>
+        <span id="g-dem">Demand 0</span>
+      </div>
+    </div>
+
+    <div class="hud-stats" id="hud-stats"></div>
+  </header>
+
+  <main id="stage">
+    <section class="view active" id="view-field">
+      <div id="region-bar" class="region-bar"></div>
+      <div id="map-wrap">
+        <canvas id="map"></canvas>
+        <div id="map-hint" class="map-hint"></div>
+        <div class="map-tools">
+          <button id="btn-zoom-in" aria-label="Zoom in">+</button>
+          <button id="btn-zoom-out" aria-label="Zoom out">&minus;</button>
+          <button id="btn-center" aria-label="Recenter">&#9678;</button>
+        </div>
+        <div id="region-stats" class="region-stats"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-world"><div class="scroll" id="world-body"></div></section>
+    <section class="view" id="view-capitol"><div class="scroll" id="capitol-body"></div></section>
+    <section class="view" id="view-rnd"><div class="scroll" id="rnd-body"></div></section>
+    <section class="view" id="view-hq"><div class="scroll" id="hq-body"></div></section>
+    <section class="view" id="view-intel"><div class="scroll" id="intel-body"></div></section>
+  </main>
+
+  <nav id="tabbar">
+    <button class="tab active" data-view="field"><span class="ti">&#9968;</span><span>Field</span></button>
+    <button class="tab" data-view="world"><span class="ti">&#128202;</span><span>World<i class="badge" id="badge-world"></i></span></button>
+    <button class="tab" data-view="capitol"><span class="ti">&#127963;</span><span>Capitol<i class="badge" id="badge-capitol"></i></span></button>
+    <button class="tab" data-view="rnd"><span class="ti">&#9881;</span><span>R&amp;D<i class="badge" id="badge-rnd"></i></span></button>
+    <button class="tab" data-view="hq"><span class="ti">&#127970;</span><span>HQ</span></button>
+    <button class="tab" data-view="intel"><span class="ti">&#128220;</span><span>Intel<i class="badge" id="badge-intel"></i></span></button>
+  </nav>
+
+  <div id="sheet" class="sheet" aria-live="polite"></div>
+</div>
+
+<div id="title-screen">
+  <div class="title-art" aria-hidden="true">
+    <div class="derrick"><i></i><i></i><i></i><i></i></div>
+    <div class="gush"></div>
+  </div>
+  <h1>CAPITAL<span>ISM</span></h1>
+  <p class="tagline">Keep the country supplied. Buy the government. Outlive the planet.</p>
+  <div id="title-menu"></div>
+  <footer class="title-foot">
+    <span>v<span id="v-num"></span></span> &middot;
+    <button class="link" data-help="how">How to play</button> &middot;
+    <button class="link" data-help="credits">Credits</button>
+  </footer>
+</div>
+
+<div id="modal-root"></div>
+<div id="toasts"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
