@@ -3,7 +3,7 @@
    ============================================================ */
 import { REGIONS, REGION, STRUCT, TERRAIN, ACT, ACTS, OPS, PROGRAMS, TECH, TECHS, START_YEAR } from './data.js';
 import {
-  G, bus, logMsg, diff, hasTech, rateMult, opexMult, marginMult, demandOf, repPrice,
+  G, bus, logMsg, diff, hasTech, rateMult, opexMult, marginMult, demandOf, repPrice, royaltyOf,
   addGreen, addHeat, grantAch, oiledCount, greenCount, isOiled, BASE_DEMAND
 } from './state.js';
 import { clamp, chance, pick, money, num } from './util.js';
@@ -168,7 +168,7 @@ function economy(s, res) {
   for (const r of REGIONS) {
     const rs = s.regions[r.id];
     if (!rs.unlocked) continue;
-    royalty += rs.prod * s.price * r.royalty;
+    royalty += rs.prod * s.price * royaltyOf(r.id);
     if (rs.refinery) margin += rs.prod * s.price * STRUCT.refinery.margin;
     if (rs.tiles) for (const t of rs.tiles) if (t.st) opex += (STRUCT[t.st.k].opex || 0) * r.opexMult;
   }
@@ -472,7 +472,7 @@ export function runOp(id, rid) {
   if (op.effect === 'calm' && target) { s.regions[target].natRisk = 0; logMsg('Nationalisation shelved in ' + REGION[target].place + '.', 'good'); }
   if (op.effect === 'coup' && target) {
     const r = REGION[target];
-    r.royalty = Math.max(0.04, r.royalty * 0.5);
+    s.regions[target].royaltyMod = -(r.royalty * 0.5);
     s.regions[target].natRisk = 0; s.regions[target].unrest = 0; s.regions[target].armed = 0;
     addGreen(1.5);
     grantAch('coup');

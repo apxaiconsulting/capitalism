@@ -87,6 +87,12 @@ export const activeRegions = () => REGIONS.filter(r => G.s.regions[r.id].unlocke
 export const oiledCount = () => G.s.congress.filter(r => r.type === 'oiled').length;
 export const greenCount = () => G.s.congress.filter(r => r.type === 'green').length;
 export const isOiled = () => G.s.president.oiliness >= 60;
+/* the concession terms of a run live in the save, never in the region data */
+export function royaltyOf(rid) {
+  const r = REGION_BY_ID[rid], rs = G.s.regions[rid];
+  return clamp((r ? r.royalty : 0) + ((rs && rs.royaltyMod) || 0), 0, 0.6);
+}
+const REGION_BY_ID = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 
 export function demandOf(s) {
   return BASE_DEMAND * s.gdp * clamp(s.addiction, 0.05, 2);

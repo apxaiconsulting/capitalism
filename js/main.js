@@ -8,7 +8,7 @@ const { turn, ENDINGS } = SIM;
 import { MapView, genRegion, revealArea, tileAtXY } from './map.js';
 import {
   UI, refreshAll, renderHUD, renderView, setView, showModal, toast, openTile, closeSheet,
-  renderRegionBar, renderRegionStats, modalBusy
+  renderRegionBar, renderRegionStats, modalBusy, flushModals
 } from './ui.js';
 import { $, $$, el, money, num, clamp } from './util.js';
 
@@ -57,11 +57,23 @@ function renderTitle() {
 
 function newRunDialog() {
   let chosen = 'exec';
+  const paintDiffs = () => {
+    const box = $('#diffs'); if (!box) return;
+    box.innerHTML = '';
+    Object.values(DIFFICULTY).forEach(d => {
+      const b = el('button', 'diffopt' + (d.id === chosen ? ' on' : ''));
+      b.innerHTML = '<span><b>' + d.name + '</b><small>' + d.blurb + '</small>' +
+        '<small class="muted">Start ' + money(d.cash) + ' \u00B7 ' + d.patience + ' shortfall years allowed</small></span>';
+      b.onclick = () => { chosen = d.id; $$('#diffs .diffopt').forEach(x => x.classList.remove('on')); b.classList.add('on'); };
+      box.appendChild(b);
+    });
+  };
   showModal({
     eyebrow: 'New run', title: 'Take the chair',
     html: '<p>It is 1946. You inherit a small company with one derrick in Texas, and a country that is about to want more oil every single year.</p>' +
       '<input type="text" id="coname" maxlength="28" placeholder="Company name" value="Consolidated Petroleum">' +
       '<div class="sectitle">Difficulty</div><div class="choices" id="diffs"></div>',
+    after: paintDiffs,
     buttons: [
       { label: 'Cancel', cls: 'ghost', run: () => { } },
       {
@@ -73,16 +85,6 @@ function newRunDialog() {
         }
       }
     ]
-  });
-  requestAnimationFrame(() => {
-    const box = $('#diffs'); if (!box) return;
-    Object.values(DIFFICULTY).forEach(d => {
-      const b = el('button', 'diffopt' + (d.id === chosen ? ' on' : ''));
-      b.innerHTML = '<span><b>' + d.name + '</b><small>' + d.blurb + '</small>' +
-        '<small class="muted">Start ' + money(d.cash) + ' · ' + d.patience + ' shortfall years allowed</small></span>';
-      b.onclick = () => { chosen = d.id; $$('#diffs .diffopt').forEach(x => x.classList.remove('on')); b.classList.add('on'); };
-      box.appendChild(b);
-    });
   });
 }
 
@@ -255,6 +257,7 @@ function wire() {
     const e = ENDINGS[over.k] || ENDINGS.fired;
     SFX.news();
     wipeSave();
+    flushModals();
     const score = Math.round(s.cash + s.stats.revenue * 0.08 + s.green_cap * 3 + s.stats.metYears * 40 - s.temp * 900);
     showModal({
       eyebrow: e.e, title: e.t, sticky: true,
@@ -278,6 +281,7 @@ function wire() {
 }
 
 function backToTitle() {
+  flushModals();
   G.s = null; G.paused = true;
   $('#app').hidden = true;
   $('#title-screen').classList.remove('gone');

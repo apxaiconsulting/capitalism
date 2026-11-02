@@ -6,7 +6,7 @@ import {
   PROGRAMS, ACHS, DIFFICULTY, HELP, VERSION
 } from './data.js';
 import {
-  G, bus, logMsg, diff, hasTech, save, oiledCount, greenCount, isOiled, repPrice, demandOf
+  G, bus, logMsg, diff, hasTech, save, oiledCount, greenCount, isOiled, repPrice, demandOf, royaltyOf
 } from './state.js';
 import {
   turn, doBuild, doDemolish, doScan, scanCost, buildCost, canBuild, doBribeLocals, doPayOff,
@@ -31,6 +31,13 @@ export function toast(msg, kind = '') {
 /* ---------------- modal ---------------- */
 let modalQueue = [], modalOpen = false;
 export const modalBusy = () => modalOpen;
+/* drop anything still queued - used when a run ends or the title screen comes back */
+export function flushModals() {
+  modalQueue.length = 0;
+  modalOpen = false;
+  const root = $('#modal-root');
+  if (root) { root.className = ''; root.innerHTML = ''; }
+}
 export function showModal(cfg) { modalQueue.push(cfg); if (!modalOpen) nextModal(); }
 function nextModal() {
   const root = $('#modal-root');
@@ -74,6 +81,7 @@ function nextModal() {
     foot.appendChild(n); m.appendChild(foot);
   }
   root.appendChild(scrim); root.appendChild(m);
+  if (cfg.after) { try { cfg.after(m); } catch (e) { console.error(e); } }
   function close() { root.className = ''; setTimeout(nextModal, 60); }
 }
 
@@ -161,7 +169,7 @@ export function offerUnlock(rid) {
     eyebrow: r.place, title: r.name,
     html: '<p>' + esc(r.blurb) + '</p>' +
       bits.map(b => '<div class="kv"><span class="muted">' + esc(b) + '</span></div>').join('') +
-      '<div class="kv"><span>Royalty rate</span><b>' + pct(r.royalty) + '</b></div>' +
+      '<div class="kv"><span>Royalty rate</span><b>' + pct(royaltyOf(rid)) + '</b></div>' +
       '<div class="kv"><span>Operating costs</span><b>' + pct(r.opexMult - 1, 0).replace('-', '−') + ' of normal</b></div>' +
       '<div class="kv"><span>Instability</span><b>' + (r.instability > 0.25 ? 'High' : r.instability > 0.05 ? 'Moderate' : 'Low') + '</b></div>' +
       (rs.seized ? '<p class="neg">These assets were nationalised. Re-entry means paying again.</p>' : ''),
@@ -361,7 +369,7 @@ export function renderWorld() {
     const rs = s.regions[r.id];
     const left = rs.tiles ? rs.tiles.reduce((t, x) => t + x.oil, 0) : 0;
     return `<div class="listitem"><span class="ic">${r.ic}</span><div class="body"><b>${esc(r.name)}</b>
-      <small>${mbbl(rs.prod || 0)} Mbbl/yr · ${rs.wells || 0} wells · ${mbbl(left)} Mbbl known reserves · royalty ${pct(r.royalty)}</small>
+      <small>${mbbl(rs.prod || 0)} Mbbl/yr · ${rs.wells || 0} wells · ${mbbl(left)} Mbbl known reserves · royalty ${pct(royaltyOf(r.id))}</small>
       ${rs.armed ? '<small class="neg">armed insurgents</small>' : rs.unrest ? '<small class="warnc">blockade</small>' : ''}
       <div class="meter" style="margin-top:5px"><i style="width:${(clamp((rs.prod || 0) / Math.max(1, s.production), 0, 1) * 100).toFixed(0)}%"></i></div></div></div>`;
   }).join('') || '<div class="empty">No operations yet.</div>'}
@@ -640,7 +648,7 @@ export function renderHQ() {
       const rs = s.regions[r.id];
       return `<div class="listitem"><span class="ic">${r.ic}</span><div class="body">
         <b>${esc(r.name)} <span class="muted">${esc(r.place)}</span></b>
-        <small>${rs.unlocked ? mbbl(rs.prod || 0) + ' Mbbl/yr · ' + (rs.wells || 0) + ' wells · royalty ' + pct(r.royalty) : esc((r.unlock && r.unlock.text) || '')}</small></div>
+        <small>${rs.unlocked ? mbbl(rs.prod || 0) + ' Mbbl/yr · ' + (rs.wells || 0) + ' wells · royalty ' + pct(royaltyOf(r.id)) : esc((r.unlock && r.unlock.text) || '')}</small></div>
         ${rs.unlocked ? '<span class="pill g">operating</span>' : '<button class="btn sm unlockr" data-r="' + r.id + '">open</button>'}</div>`;
     }).join('')}
   </div>

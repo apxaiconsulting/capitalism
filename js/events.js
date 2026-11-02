@@ -391,7 +391,7 @@ export const EVENTS = [
         eyebrow: 'Kuvik', title: 'The Herd Did Not Come Back',
         text: 'The calving ground moved sixty kilometres and the subsistence hunt failed. The village has filed suit and the photographs are devastating.',
         choices: [
-          C('Royalty-sharing agreement', 'Costly and durable', () => { REGION.alaska.royalty += 0.04; addGreen(-4); }),
+          C('Royalty-sharing agreement', 'Costly and durable', () => { const rs = s.regions.alaska; rs.royaltyMod = (rs.royaltyMod || 0) + 0.04; addGreen(-4); }),
           C('Fly in a public relations team', '', () => { s.cash -= 220; addGreen(hasTech('prmachine') ? -1 : 2); }, { cost: 220 }),
           C('Get the injunction lifted', '', () => { s.cash -= 120; addGreen(8); addHeat(6); }, { cost: 120 })
         ]
