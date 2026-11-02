@@ -134,6 +134,7 @@ export const OP = Object.fromEntries(OPS.map(o => [o.id, o]));
 export const ACHS = [
   { id: 'first_oil', ic: '\u{1F6E2}', name: 'First Oil', desc: 'Strike your first pool.' },
   { id: 'dry', ic: '\u{1F573}', name: 'A Hole In The Ground', desc: 'Drill where there is nothing. It happens.' },
+  { id: 'gusher', ic: '\u26F2', name: 'Gusher', desc: 'Hit a pool hard enough that it comes up on its own.' },
   { id: 'rich', ic: '\u{1F4B0}', name: 'Comfortable', desc: 'Hold $10B.' },
   { id: 'trillion', ic: '\u{1F451}', name: 'Trillionaire', desc: 'Hold $1T.' },
   { id: 'oiled', ic: '\u{1F6E2}', name: 'Oiled', desc: 'Put your own president in the White House.' },
@@ -147,6 +148,27 @@ export const ACHS = [
   { id: 'century', ic: '\u{1F570}', name: 'The Oil Century', desc: 'Still in the chair in 2051.' },
   { id: 'clean', ic: '\u{1F54A}', name: 'Clean Hands', desc: 'Reach 1990 without buying a single representative.' }
 ];
+
+/* ---------------- the front page ----------------
+   One line a year, chosen by what you actually did. */
+export const HEADLINES = [
+  { w: 9, cond: (s) => s.flags.gusherYear === s.year, t: ['GUSHER IN @PLACE', 'BLACK RAIN FALLS ON @PLACE', 'WELL BLOWS OUT, COMPANY CALLS IT A GOOD DAY'] },
+  { w: 9, cond: (s) => s.flags.rivalYear === s.year, t: ['@RIVAL TAKES THE FIELD AT @PLACE', '@RIVAL DRILLS WHERE YOU DID NOT', 'RIVAL LANDS THE LEASE YOU SURVEYED'] },
+  { w: 10, cond: (s) => s.flags.floodYear === s.year, t: ['THE SEA TAKES A WELL AT @PLACE', 'COASTLINE MOVES INLAND, NOBODY IS SURPRISED', 'HIGH WATER CLAIMS A PLATFORM'] },
+  { w: 8, cond: (s) => s.crisisYears > 0, t: ['QUEUES AT THE PUMPS FOR A @NTH YEAR', 'SHORTAGE: INDUSTRY BLAMED', 'GOVERNMENT ASKS WHERE THE OIL WENT'] },
+  { w: 7, cond: (s) => s.price > 60, t: ['CRUDE AT $@PRICE, HAULIERS STRIKE', 'PETROL PRICES BITE', 'ANALYSTS SEE NO CEILING'] },
+  { w: 6, cond: (s) => s.green > 60, t: ['MARCHES IN TWELVE CITIES', 'SCHOOLCHILDREN OUTSIDE YOUR OFFICES AGAIN', 'POLL: PUBLIC BLAMES THE OIL MAJORS'] },
+  { w: 6, cond: (s) => s.green < 20 && s.year > 1960, t: ['CONSUMER CONFIDENCE AT A HIGH', 'NATION BUYS A SECOND CAR', 'NOBODY IS WORRIED ABOUT THE WEATHER'] },
+  { w: 7, cond: (s) => s.temp > 1.6, t: ['HOTTEST YEAR ON RECORD. AGAIN', 'CROPS FAIL IN THREE STATES', 'ANOTHER RECORD SUMMER, ANOTHER RECORD QUARTER'] },
+  { w: 6, cond: (s) => s.president.oiliness >= 60, t: ['PRESIDENT DINES WITH INDUSTRY', 'WHITE HOUSE: "ENERGY IS SECURITY"', 'ADMINISTRATION DROPS THE INQUIRY'] },
+  { w: 5, cond: (s) => s.stats.wars > 0 && s.year - (s.ops.liberation || 0) < 4, t: ['TROOPS SECURE THE OILFIELDS', 'LIBERATION ENTERS ITS SECOND YEAR', 'RECONSTRUCTION CONTRACTS AWARDED'] },
+  { w: 5, cond: (s) => s.flags.burnerBuilt, t: ['WHERE DOES THE FEEDSTOCK COME FROM?', 'BIOMASS PLANTS EXPAND QUIETLY', 'NOBODY ASKS THE OBVIOUS QUESTION'] },
+  { w: 5, cond: (s) => s.world.peaked, t: ['OUTPUT FALLS FOR A @NTH YEAR', 'GEOLOGISTS: THE EASY OIL IS GONE', 'RATIONING DISCUSSED IN COMMITTEE'] },
+  { w: 4, cond: (s) => s.stats.dry > 0 && s.flags.dryYear === s.year, t: ['ANOTHER DRY HOLE AT @PLACE', 'EXPENSIVE HOLE DUG IN @PLACE'] },
+  { w: 3, cond: () => true, t: ['BUSINESS AS USUAL', 'QUIET YEAR FOR THE INDUSTRY', 'SHAREHOLDERS CONTENT', 'NOTHING MUCH HAPPENED, OFFICIALLY'] }
+];
+
+export const RIVALS = ['Stannard Oil', 'Arcadia Petroleum', 'Vexil Energy', 'Bellweather Crude', 'Kestrel Resources'];
 
 export const HELP = {
   how: `<h2>How to play</h2>

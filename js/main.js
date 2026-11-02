@@ -4,13 +4,13 @@
 import { VERSION, DIFFICULTY, HELP, ACHS, PLACE, ACTIONS } from './data.js';
 import { G, bus, newGame, load, save, peekSave, wipeSave, saveCfg, demandOf, isOiled } from './state.js';
 import * as SIM from './sim.js';
-const { turn, ENDINGS } = SIM;
+const { turn, ENDINGS, epilogue } = SIM;
 import { Field, genScene, revealSpan, poolUnder } from './field.js';
 import {
-  UI, renderHUD, yearTick, openPanel, closePanel, renderPanel, showModal, toast, ticker,
+  UI, renderHUD, yearTick, openPanel, closePanel, renderPanel, showModal, toast, ticker, headline,
   modalBusy, flushModals, groundTap, travel, offerPlace
 } from './ui.js';
-import { $, $$, el, money, num, clamp } from './util.js';
+import { $, $$, el, money, num, clamp, esc } from './util.js';
 
 const SPEEDS = [0, 2600, 1300, 650];   /* paused, 1x, 2x, 4x */
 G.paused = true;
@@ -181,6 +181,20 @@ function wire() {
     SFX.news();
     showModal({ eyebrow: card.eyebrow, title: card.title, text: card.text, sticky: true, choices: card.choices });
   });
+  bus.on('headline', (t) => headline(t));
+  bus.on('gusher', ({ id, col, bonus }) => {
+    SFX.cash();
+    if (UI.place === id && UI.field) UI.field.burst(col, 'gusher');
+    toast('&#9970; <b>GUSHER</b> &middot; ' + money(bonus) + ' in the air', 'gold');
+  });
+  bus.on('rival', ({ id }) => {
+    SFX.bad();
+    toast('<b>' + esc(G.s.rival.name) + '</b> has drilled a field at ' + esc(PLACE[id].name), 'bad');
+  });
+  bus.on('flood', ({ id, lostRig }) => {
+    SFX.bad();
+    toast('The sea took ground at ' + esc(PLACE[id].name) + (lostRig ? ', and a well with it' : ''), 'bad');
+  });
   bus.on('bigNews', (n) => { SFX.news(); showModal({ eyebrow: n.eyebrow, title: n.title, text: n.text, sticky: true }); });
   bus.on('crisis', ({ step, act }) => {
     SFX.bad();
@@ -237,11 +251,14 @@ function wire() {
   bus.on('gameOver', (over) => {
     const s = G.s, e = ENDINGS[over.k] || ENDINGS.fired;
     SFX.news(); wipeSave(); flushModals();
+    if (UI.field) { UI.field.ending = over.k; closePanel(); }
+    $('#app').classList.add('ending');
     const score = Math.round(s.cash + s.stats.revenue * 0.08 + s.stats.metYears * 60 - s.temp * 900);
+    const after = epilogue(s).map(l => '<div class="epi">' + l + '</div>').join('');
     showModal({
-      eyebrow: e.e, title: e.t, sticky: true,
-      html: '<p>' + e.x + '</p>' +
-        '<div class="kv"><span>Years in the chair</span><b>' + (s.year - 1946) + '</b></div>' +
+      eyebrow: e.e, title: e.t, sticky: true, cls: 'ending',
+      html: '<p>' + e.x + '</p>' + '<div class="sectitle">What happened next</div>' + after +
+        '<div class="kv" style="margin-top:12px"><span>Years in the chair</span><b>' + (s.year - 1946) + '</b></div>' +
         '<div class="kv"><span>Final cash</span><b>' + money(s.cash) + '</b></div>' +
         '<div class="kv"><span>Oil pumped</span><b>' + num(s.stats.pumped, 0) + ' Mbbl</b></div>' +
         '<div class="kv"><span>Years you kept the country supplied</span><b>' + s.stats.metYears + '</b></div>' +
@@ -259,6 +276,8 @@ function wire() {
 
 function backToTitle() {
   flushModals(); closePanel();
+  if (UI.field) UI.field.ending = null;
+  $('#app').classList.remove('ending');
   G.s = null; G.paused = true;
   $('#app').hidden = true;
   $('#title-screen').classList.remove('gone');

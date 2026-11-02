@@ -494,3 +494,27 @@ canvas.spark{width:100%;height:110px;display:block}
 }
 .float.pos{color:#8ef0c0}.float.neg{color:#ff9d8d}
 @keyframes floatUp{0%{opacity:0;transform:translateY(6px)}18%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
+
+
+/* the front page, and the last page */
+.ticker.news{
+  font-family:Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:#f4efe4;background:rgba(14,12,10,.9);border-color:#5a5146;font-size:12.5px;
+  border-left:3px solid var(--amber);border-right:3px solid var(--amber)
+}
+.epi{
+  font-size:13px;color:#cdd5e4;padding:6px 0 6px 12px;border-left:2px solid var(--line2);margin-bottom:2px;line-height:1.45
+}
+
+
+/* an ending should let you see what you did */
+.scrim.light{background:rgba(4,6,9,.28);backdrop-filter:none}
+.modal.ending{
+  background:rgba(14,17,23,.9);backdrop-filter:blur(8px);border-color:rgba(240,168,48,.35);
+  width:min(470px,100%);max-height:78vh;box-shadow:0 30px 90px rgba(0,0,0,.75)
+}
+.modal.ending h2{font-size:23px;letter-spacing:-.02em}
+.modal.ending .eyebrow{color:#ffd27a}
+
+/* the last screen is the scene and the words, nothing else */
+#app.ending .topbar,#app.ending .globe,#app.ending .readout,#app.ending .vgauge,#app.ending #ticker,#app.ending .armed{display:none}

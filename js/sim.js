@@ -1,7 +1,7 @@
 /* ============================================================
    Capitalism - one turn is one year
    ============================================================ */
-import { PLACES, PLACE, ACTIONS, ACT, ACTS, OPS, OP, START_YEAR, END_YEAR } from './data.js';
+import { PLACES, PLACE, ACTIONS, ACT, ACTS, OPS, OP, HEADLINES, RIVALS, START_YEAR, END_YEAR } from './data.js';
 import {
   G, bus, logMsg, diff, demandOf, royaltyOf, costOf, repPrice,
   addGreen, grantAch, oiledCount, greenCount, isOiled
@@ -25,6 +25,8 @@ export function turn() {
   society(s);
   politics(s);
   unrest(s);
+  rivalTurn(s);
+  climateDamage(s);
   peak(s);
   s.hist.demand.push(Math.round(s.demand));
   s.hist.prod.push(Math.round(s.production));
@@ -32,12 +34,13 @@ export function turn() {
   Object.values(s.hist).forEach(a => { if (a.length > 120) a.shift(); });
   maybeEvent(s);
   achievements(s);
+  headline(s);
   endgame(s);
   bus.emit('turn', s);
 }
 
 function produce(s) {
-  let total = 0, rigs = 0, dry = 0;
+  let total = 0, rigs = 0, dry = 0, burned = 0;
   for (const p of PLACES) {
     const ps = s.places[p.id];
     ps.prod = 0;
@@ -54,6 +57,7 @@ function produce(s) {
       if (rig.k === 'burner') {
         rig.last = rate * mult;
         ps.prod += rig.last;
+        burned += rig.last;
         return;
       }
       const pool = rig.pool != null ? ps.scene.pools[rig.pool] : null;
@@ -69,6 +73,8 @@ function produce(s) {
     total += ps.prod;
   }
   s.stats.rigs = rigs; s.stats.dry = dry; s.stats.pumped += total;
+  s.burnerShare = total > 0 ? burned / total : 0;
+  s.stats.burnedTotal = (s.stats.burnedTotal || 0) + burned;
   if (total > s.world.maxProd) { s.world.maxProd = total; s.world.peakYear = s.year; }
   if (total > 0 && !s.flags.oil) { s.flags.oil = 1; grantAch('first_oil'); }
   return total;
@@ -124,7 +130,10 @@ function money_(s, sold) {
     const ps = s.places[p.id];
     if (!ps.open) continue;
     royalty += ps.prod * s.price * royaltyOf(p.id);
-    if (ps.scene) ps.scene.rigs.forEach(r => { if (r) upkeep += (ACTIONS[r.k].upkeep || ACTIONS[r.k].cost * 0.14); });
+    if (ps.scene) ps.scene.rigs.forEach(r => {
+      const def = r && ACTIONS[r.k];
+      if (def) upkeep += (def.upkeep || def.cost * 0.14);
+    });
   }
   const gross = sold * s.price;
   const taxable = gross - royalty - upkeep;
@@ -345,6 +354,102 @@ export function runOp(id, where) {
   return { ok: 1 };
 }
 
+/* ---------------- the competition ----------------
+   Whatever you survey and do not drill, somebody else is reading. */
+function rivalTurn(s) {
+  s.rival ||= { name: pick(RIVALS), taken: 0 };
+  /* their existing wells keep draining what could have been yours */
+  for (const p of PLACES) {
+    const ps = s.places[p.id];
+    if (!ps.open || !ps.scene) continue;
+    ps.scene.rigs.forEach(r => {
+      if (!r || r.k !== 'rival') return;
+      const pool = ps.scene.pools[r.pool];
+      if (pool) { pool.oil = Math.max(0, pool.oil - 55); r.last = 55; }
+    });
+  }
+  if (s.year < 1952 || !chance(0.3)) return;
+  /* they prefer a pool you have already found and left alone */
+  const options = [];
+  for (const p of PLACES) {
+    const ps = s.places[p.id];
+    if (!ps.open || !ps.scene) continue;
+    const sc = ps.scene;
+    sc.pools.forEach((pool, i) => {
+      if (pool.oil < 80) return;
+      let mine = false, free = -1;
+      for (let c = 0; c < sc.cols; c++) {
+        if (Math.abs(pool.x - (c + 0.5)) > pool.rx) continue;
+        if (sc.rigs[c]) { mine = true; break; }
+        const t = sc.ground[c].t;
+        if (free < 0 && (t === 'land' || t === 'forest')) free = c;
+      }
+      if (!mine && free >= 0) options.push({ id: p.id, col: free, pool: i, weight: pool.found ? 3 : 1 });
+    });
+  }
+  if (!options.length) return;
+  const total = options.reduce((t, o) => t + o.weight, 0);
+  let roll = Math.random() * total, take = options[0];
+  for (const o of options) { roll -= o.weight; if (roll <= 0) { take = o; break; } }
+  const sc = s.places[take.id].scene;
+  sc.rigs[take.col] = { k: 'rival', pool: take.pool, last: 55, at: s.year };
+  sc.pools[take.pool].found = 1;
+  sc.seen[take.col] = 1;
+  s.rival.taken++;
+  s.flags.rivalYear = s.year; s.flags.rivalPlace = take.id;
+  logMsg(s.rival.name + ' has moved onto a field at ' + PLACE[take.id].name + '.', 'bad');
+  bus.emit('rival', { id: take.id, col: take.col });
+}
+
+/* ---------------- the sea, arriving ---------------- */
+function climateDamage(s) {
+  if (s.temp < 1.4) return;
+  if (!chance(Math.min(0.5, (s.temp - 1.4) * 0.3))) return;
+  const cands = [];
+  for (const p of PLACES) {
+    const ps = s.places[p.id];
+    if (!ps.open || !ps.scene) continue;
+    const sc = ps.scene;
+    for (let c = 0; c < sc.cols; c++) {
+      if (sc.ground[c].t === 'sea') continue;
+      const nextToSea = (sc.ground[c - 1] && sc.ground[c - 1].t === 'sea') || (sc.ground[c + 1] && sc.ground[c + 1].t === 'sea');
+      if (nextToSea && sc.ground[c].h < 0.55) cands.push({ id: p.id, col: c, h: sc.ground[c].h });
+    }
+  }
+  if (!cands.length) return;
+  cands.sort((a, b) => a.h - b.h);
+  const hit = cands[0];
+  const sc = s.places[hit.id].scene;
+  const lost = sc.rigs[hit.col];
+  sc.ground[hit.col] = { t: 'sea', h: -0.22, v: Math.random() };
+  if (lost) {
+    sc.rigs[hit.col] = null;
+    if (lost.k === 'merc') s.places[hit.id].guarded = sc.rigs.some(r => r && r.k === 'merc') ? 1 : 0;
+  }
+  s.flags.floodYear = s.year; s.flags.floodPlace = hit.id;
+  s.stats.floods = (s.stats.floods || 0) + 1;
+  logMsg('The sea has taken ground at ' + PLACE[hit.id].name + (lost ? ', and a well with it.' : '.'), 'bad');
+  bus.emit('flood', { id: hit.id, col: hit.col, lostRig: !!lost });
+}
+
+/* ---------------- the front page ---------------- */
+function headline(s) {
+  const pool = HEADLINES.filter(h => { try { return h.cond(s); } catch { return false; } });
+  if (!pool.length) return;
+  const total = pool.reduce((t, h) => t + h.w, 0);
+  let roll = Math.random() * total, pickd = pool[0];
+  for (const h of pool) { roll -= h.w; if (roll <= 0) { pickd = h; break; } }
+  const where = PLACE[s.flags.gusherPlace || s.flags.rivalPlace || s.flags.floodPlace || 'texas'];
+  const nth = ['', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH'][Math.min(5, Math.max(1, s.crisisYears || 2))];
+  const text = pick(pickd.t)
+    .replace('@PLACE', (where ? where.name : 'TEXAS').toUpperCase())
+    .replace('@RIVAL', (s.rival ? s.rival.name : 'A RIVAL').toUpperCase())
+    .replace('@PRICE', Math.round(s.price))
+    .replace('@NTH', nth);
+  s.frontPage = text;
+  bus.emit('headline', text);
+}
+
 /* ---------------- unrest and the peak ---------------- */
 function unrest(s) {
   for (const p of PLACES) {
@@ -358,7 +463,7 @@ function unrest(s) {
       if (ps.unrest && !ps.guarded && chance(0.18)) { ps.unrest = 0; ps.armed = 1; logMsg('The movement at ' + p.name + ' has taken up arms.', 'bad'); }
       if (ps.armed && ps.guarded && chance(0.3)) { ps.armed = 0; logMsg('Insurgents pushed back at ' + p.name + '.', 'good'); }
       if (ps.armed && !ps.guarded && chance(0.22) && ps.scene) {
-        const live = ps.scene.rigs.map((r, i) => r && ACTIONS[r.k].rate ? i : -1).filter(i => i >= 0);
+        const live = ps.scene.rigs.map((r, i) => (r && ACTIONS[r.k] && ACTIONS[r.k].rate) ? i : -1).filter(i => i >= 0);
         if (live.length) { ps.scene.rigs[pick(live)] = null; logMsg('A well was destroyed at ' + p.name + '. You have no guards there.', 'bad'); }
       }
     }
@@ -401,6 +506,7 @@ export function act(id, col, kind) {
   if (kind === 'demolish') {
     if (!sc.rigs[col]) return { err: 'Nothing to demolish' };
     const k = sc.rigs[col].k;
+    if (!ACTIONS[k]) return { err: 'That one is not yours' };
     sc.rigs[col] = null;
     if (k === 'merc') ps.guarded = sc.rigs.some(r => r && r.k === 'merc') ? 1 : 0;
     const back = Math.round(costOf(ACTIONS[k].cost, id) * 0.25);
@@ -431,7 +537,7 @@ export function act(id, col, kind) {
   }
 
   if (def.locked && !s.flags[def.locked]) return { err: 'Not available yet' };
-  if (sc.rigs[col]) return { err: 'Something is already built here' };
+  if (sc.rigs[col]) return { err: sc.rigs[col].k === 'rival' ? 'Their pump is on it. You were slow.' : 'Something is already built here' };
   if (def.on === 'land' && wet) return { err: 'That is water' };
   if (def.on === 'sea' && !wet) return { err: 'That is dry land' };
   if (g.t === 'park' && !s.flags.parks) return { err: 'Protected land. It takes an act of Congress.' };
@@ -448,7 +554,19 @@ export function act(id, col, kind) {
   if (def.rate) addGreen(PLACE[id].green * 0.3);
   if (def.rate && !pool && kind !== 'burner') {
     grantAch('dry');
+    s.flags.dryYear = s.year;
     return { ok: 1, dry: 1, msg: 'Dry hole. You have bought ' + money(cost) + ' of hole.' };
+  }
+  if (kind === 'burner') s.flags.burnerBuilt = 1;
+  /* a fat pool under pressure does not wait to be asked */
+  if (pool && chance(pool.oil > 400 ? 0.45 : 0.22)) {
+    const bonus = Math.round(pool.oil * s.price * 0.12);
+    s.cash += bonus;
+    addGreen(2.5);
+    s.flags.gusherYear = s.year; s.flags.gusherPlace = id;
+    grantAch('gusher');
+    bus.emit('gusher', { id, col, bonus });
+    return { ok: 1, gusher: 1, bonus, msg: 'GUSHER. ' + money(bonus) + ' of crude in the air, on the grass and in the creek.' };
   }
   return { ok: 1, msg: pool ? 'Struck oil: ' + num(pool.oil, 0) + ' Mbbl under this pump.' : 'Built.' };
 }
@@ -478,6 +596,20 @@ function achievements(s) {
   if (s.year >= 1990 && s.stats.repsBought === 0) grantAch('clean');
 }
 
+/* three or four lines about what you actually did */
+export function epilogue(s) {
+  const out = [];
+  out.push('Your pumps lifted ' + num(s.stats.pumped, 0) + ' Mbbl. Almost all of it is in the atmosphere now.');
+  if (s.rival && s.rival.taken) out.push(s.rival.name + ' drilled ' + s.rival.taken + ' field' + (s.rival.taken > 1 ? 's' : '') + ' you surveyed and left alone.');
+  if (s.stats.repsBought) out.push('You bought ' + s.stats.repsBought + ' seat' + (s.stats.repsBought > 1 ? 's' : '') + ' in Congress and ' + (s.oiledTerms || 0) + ' administration' + (s.oiledTerms === 1 ? '' : 's') + '.');
+  else out.push('You never bought a single representative, which the obituaries will mention twice.');
+  if (s.stats.wars) out.push('One war, and the fields that came with it.');
+  if (s.stats.burnedTotal > 0) out.push(num(s.stats.burnedTotal, 0) + ' Mbbl of it came out of the biomass plants. The appendix is still unread.');
+  if (s.stats.floods) out.push('The sea took ground ' + s.stats.floods + ' time' + (s.stats.floods > 1 ? 's' : '') + '. Warming finished at +' + s.temp.toFixed(2) + 'C.');
+  else out.push('Warming finished at +' + s.temp.toFixed(2) + 'C, which somebody else will have to deal with.');
+  return out.slice(0, 4);
+}
+
 export const ENDINGS = {
   fired: { e: 'The Board', t: 'Escorted Out', x: 'You left the country short too many years running and a competitor filled the gap. You keep the pension, the lake house and a non-disclosure agreement. The pumps keep nodding without you.' },
   mad: { e: 'Mutually Assured Destruction', t: 'Three Hundred Dollars', x: 'Crude hit three hundred dollars and the world stopped being a market. Fuel riots, grounded fleets, grain at four times the price, and then the kind of news that gets no second bulletin. You won every argument you ever had in Washington. This is what winning them looked like.' },
@@ -485,11 +617,32 @@ export const ENDINGS = {
   farewell: { e: 'Farewell West', t: 'Farewell West', x: 'The economy you fed shrank to a third of itself. The suburbs emptied, the supply chains unwound, and your product sat in tanks nobody could afford to empty. No single catastrophe. Just a long subtraction.' },
   titan: { e: 'Beyond', t: 'Ligeia Mare', x: 'Earth had nothing left worth drilling, so you leased a sea of methane on a moon of Saturn. The first tanker is nineteen years out. The share price does not care, and neither, by now, do you.' },
   trillion: { e: 'Shareholders', t: 'One Trillion Dollars', x: 'You are the first private citizen to control a trillion dollars. Governments ask you for loans. The oil did that, and so did you.' },
+  burned: {
+    e: 'The Feedstock Question', t: 'What The Burners Burn',
+    x: 'More than a third of your output now comes out of the biomass plants, and the appendix nobody requested has been requested. There is a hearing, and then there is not a hearing. The company is restructured, the plants keep running under a name with no history, and you are advised to travel.'
+  },
+  bought: {
+    e: 'The Republic', t: 'You Are The Government',
+    x: 'Ten of ten representatives and a president who calls you first. There is no longer any meaningful difference between your board minutes and federal energy policy, so the pretence is dropped. The oil keeps coming out of the ground. Nobody votes on it any more.'
+  },
+  lastbarrel: {
+    e: 'Geology', t: 'The Last Barrel',
+    x: 'It came up on a Tuesday in a field nobody had bothered to name, and it was indistinguishable from the first. There is no more. Not expensive, not difficult: none. The machine that ate a hundred and fifty million years of sunlight in a century stops, mid-sentence.'
+  },
+  drowned: {
+    e: 'High Water', t: 'The Sea Came For The Wells',
+    x: 'Six fields are under water, including the one your grandfather opened. The insurers stopped writing the policies, then stopped returning calls. You spent a century selling the thing that moved the coastline, and the coastline came to collect, which is the only honest transaction in this entire story.'
+  },
   century: { e: 'Legacy', t: 'The Oil Century', x: 'A hundred years of boardrooms, wars and weather, and you were in the chair for all of it. You hand over the keys at the end of the age your industry wrote. The ocean is a metre higher than when you started.' }
 };
 
 function endgame(s) {
   const end = (k) => { if (!s.over) { s.over = { k, year: s.year }; bus.emit('gameOver', s.over); } };
+  /* the ones you have to work for */
+  if (s.burnerShare > 0.34 && s.year > 1990) return end('burned');
+  if (oiledCount() >= 10 && isOiled()) return end('bought');
+  if (s.world.extracted > s.world.total * 0.97) return end('lastbarrel');
+  if ((s.stats.floods || 0) >= 6) return end('drowned');
   if (s.crisisYears >= diff().patience) return end('fired');
   if ((s.stats.red || 0) >= 5) return end('fired');
   if (s.price >= CEILING - 0.5) return end('mad');

@@ -21,9 +21,18 @@ export function toast(msg, kind = '') {
 let tickT = 0;
 export function ticker(msg) {
   const t = $('#ticker');
-  t.innerHTML = msg; t.classList.add('on');
+  t.className = 'ticker on';
+  t.innerHTML = msg;
   clearTimeout(tickT);
   tickT = setTimeout(() => t.classList.remove('on'), 4200);
+}
+/* the year's front page */
+export function headline(msg) {
+  const t = $('#ticker');
+  t.className = 'ticker news on';
+  t.innerHTML = esc(msg);
+  clearTimeout(tickT);
+  tickT = setTimeout(() => t.classList.remove('on'), 5200);
 }
 
 /* ---------- modal ---------- */
@@ -38,9 +47,9 @@ function nextModal() {
   const root = $('#modal-root'), cfg = queue.shift();
   if (!cfg) { openM = false; root.className = ''; root.innerHTML = ''; return; }
   openM = true; root.innerHTML = ''; root.className = 'open';
-  const scrim = el('div', 'scrim');
+  const scrim = el('div', 'scrim' + (cfg.cls === 'ending' ? ' light' : ''));
   if (!cfg.sticky) scrim.onclick = close;
-  const m = el('div', 'modal');
+  const m = el('div', 'modal' + (cfg.cls ? ' ' + cfg.cls : ''));
   if (cfg.eyebrow) m.appendChild(el('div', 'eyebrow', esc(cfg.eyebrow)));
   if (cfg.title) m.appendChild(el('h2', '', esc(cfg.title)));
   if (cfg.html) m.appendChild(el('div', '', cfg.html));
@@ -392,7 +401,9 @@ export function groundTap(col) {
   const sc = ps.scene;
   if (!UI.armed) {
     const rig = sc.rigs[col], g = sc.ground[col];
-    if (rig) {
+    if (rig && rig.k === 'rival') {
+      ticker('&#128681; <b>' + esc(s.rival ? s.rival.name : 'A rival') + '</b> &middot; their pump, on oil you left alone');
+    } else if (rig) {
       const pool = rig.pool != null ? sc.pools[rig.pool] : null;
       ticker(ACTIONS[rig.k].ic + ' <b>' + esc(ACTIONS[rig.k].name) + '</b> &middot; ' +
         (ACTIONS[rig.k].rate ? (pool ? mb(rig.last || 0) + ' Mbbl last year, ' + mb(pool.oil) + ' left in the pool' : 'a dry hole') : 'standing guard'));

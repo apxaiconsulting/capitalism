@@ -34,7 +34,7 @@ export function newGame(diffId, company) {
     places: {}, congress: REP_NAMES.map((n, i) => ({ name: n, type: i < 3 ? 'oiled' : i < 9 ? 'gray' : 'green' })),
     president: { name: 'Hollis Grant', party: 'Elephant', oiliness: 45 },
     electionIn: 4, campaign: null, administrations: 0, oiledTerms: 0,
-    agenda: [], history: [], ops: {},
+    agenda: [], history: [], ops: {}, rival: null, frontPage: '',
     world: { total: 0, extracted: 0, peaked: false, peakYear: 0, maxProd: 0 },
     emissions: 0, temp: 0.1, crisisYears: 0,
     stats: { rigs: 0, dry: 0, metYears: 0, revenue: 0, lastNet: 0, lastGross: 0, lastCosts: 0, pumped: 0, repsBought: 0, ops: 0, wars: 0 },

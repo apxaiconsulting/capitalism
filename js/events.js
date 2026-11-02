@@ -38,7 +38,7 @@ export const EVENTS = [
           C('Keep drilling', 'Gamble on the forecast', () => {
             if (chance(0.55)) {
               const sc = s.places[p.id].scene;
-              const idx = sc.rigs.map((r, i) => r && r.k === 'rig' ? i : -1).filter(i => i >= 0);
+              const idx = sc.rigs.map((r, i) => (r && r.k === 'rig') ? i : -1).filter(i => i >= 0);
               if (idx.length) sc.rigs[pick(idx)] = null;
               addGreen(5);
               logMsg('A platform was lost in the storm off ' + p.name + '.', 'bad');
@@ -100,7 +100,7 @@ export const EVENTS = [
           C('Pay the local commanders', 'Protection, of a sort', () => { s.cash -= 150; s.places[p.id].armed = 0; }, { cost: 150 }),
           C('Accept the losses', '', () => {
             const sc = s.places[p.id].scene;
-            const idx = sc.rigs.map((r, i) => r && ACTIONS[r.k].rate ? i : -1).filter(i => i >= 0);
+            const idx = sc.rigs.map((r, i) => (r && ACTIONS[r.k] && ACTIONS[r.k].rate) ? i : -1).filter(i => i >= 0);
             if (idx.length) { sc.rigs[pick(idx)] = null; logMsg('A well at ' + p.name + ' is gone.', 'bad'); }
           })
         ]
