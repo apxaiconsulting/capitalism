@@ -191,7 +191,7 @@ function politics(s) {
   if (chance(s.president.oiliness / 100 * 0.35) && s.agenda.filter(a => ACT[a.id].pro).length < 2) propose(s, 1);
   if (chance(clamp(s.green / 180, 0, 0.5)) && s.agenda.filter(a => !ACT[a.id].pro).length < 2) propose(s, 0);
 
-  if (--s.electionIn === 2 && !s.campaign) startCampaign(s);
+  if (--s.electionIn === 3 && !s.campaign) startCampaign(s);
   if (s.electionIn <= 0) election(s);
 }
 
@@ -410,6 +410,19 @@ export function act(id, col, kind) {
 
   const cost = costOf(def.cost, id);
   if (s.cash < cost) return { err: 'Need ' + money(cost) };
+
+  if (kind === 'buyout') {
+    if (g.t !== 'town' && g.t !== 'village') return { err: 'Nobody lives here' };
+    const village = g.t === 'village';
+    s.cash -= cost;
+    g.t = 'land';
+    sc.seen[col] = 1;
+    addGreen(village ? 2 : 3.5);
+    logMsg(village
+      ? 'The local authorities took care of the village at ' + PLACE[id].name + '. Nobody asked where it went.'
+      : 'A township at ' + PLACE[id].name + ' was bought out and levelled.', 'bad');
+    return { ok: 1, msg: village ? 'The village is no longer a problem.' : 'The township is gone. The ground is yours.' };
+  }
 
   if (kind === 'explore') {
     s.cash -= cost;

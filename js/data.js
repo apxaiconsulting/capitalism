@@ -20,25 +20,29 @@ export const DIFFICULTY = {
 export const ACTIONS = {
   explore: {
     name: 'Exploration crew', ic: '\u{1FA82}', cost: 70, verb: 'Survey here',
-    desc: 'Parachutes in, shoots the seismic, and tells you what is under a stretch of ground.'
+    desc: 'Shows you what is under a stretch of ground.'
   },
   derrick: {
     name: 'Oil derrick', ic: '⛏', cost: 120, rate: 60, on: 'land', verb: 'Drill here',
-    desc: 'Drills straight down. If there is a pool under it, it pumps 60 a year. If there is not, you have bought a hole.'
+    desc: 'Drills straight down. Over a pool it pumps 60 a year. Over nothing it is a hole.'
   },
   rig: {
     name: 'Offshore rig', ic: '\u{1F6E2}', cost: 330, rate: 95, on: 'sea', verb: 'Drill at sea',
-    desc: 'For the water. Three times the price, half again the oil, and the spills are televised.'
+    desc: 'For water. Dearer, richer, and the spills are televised.'
   },
   merc: {
     name: 'Mercenaries', ic: '\u{1F3AF}', cost: 160, upkeep: 42, on: 'land', verb: 'Deploy here',
-    desc: 'Keeps the locals away from the wellheads. Nobody publishes the number.'
+    desc: 'Keeps the locals off the wellheads. Nobody publishes the number.'
   },
   burner: {
     name: 'Human burner', ic: '\u{1F480}', cost: 95, rate: 30, on: 'land', locked: 'burners', verb: 'Build the burner',
-    desc: 'Converts low-grade organic feedstock into synthetic crude. Half a derrick, needs no pool, and the appendix on feedstock is three paragraphs with no nouns in it.'
+    desc: 'Low-grade organic feedstock into synthetic crude. Half a derrick, no pool needed. Do not read the appendix.'
   },
-  demolish: { name: 'Demolish', ic: '\u{1F4A3}', cost: 0, verb: 'Tear it down', desc: 'Scrap it and get a quarter of your money back.' }
+  buyout: {
+    name: 'Buy them out', ic: '\u{1F4B5}', cost: 180, on: 'people', verb: 'Clear the houses',
+    desc: 'Relocation money for a township, or an envelope for the local authorities. Either way the ground is yours.'
+  },
+  demolish: { name: 'Demolish', ic: '\u{1F4A3}', cost: 0, verb: 'Tear it down', desc: 'Scrap it for a quarter of the money.' }
 };
 
 /* ---------------- the world ---------------- */

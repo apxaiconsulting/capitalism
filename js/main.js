@@ -7,13 +7,14 @@ import * as SIM from './sim.js';
 const { turn, ENDINGS } = SIM;
 import { Field, genScene, revealSpan, poolUnder } from './field.js';
 import {
-  UI, renderHUD, openPanel, closePanel, renderPanel, showModal, toast, ticker,
+  UI, renderHUD, yearTick, openPanel, closePanel, renderPanel, showModal, toast, ticker,
   modalBusy, flushModals, groundTap, travel, offerPlace
 } from './ui.js';
 import { $, $$, el, money, num, clamp } from './util.js';
 
-const SPEED = 5200;
+const SPEEDS = [0, 2600, 1300, 650];   /* paused, 1x, 2x, 4x */
 G.paused = true;
+G.rate = 1;
 
 /* ---------- sound ---------- */
 let actx = null;
@@ -113,8 +114,7 @@ function start(resumed) {
   const first = Object.keys(G.s.places).find(id => G.s.places[id].open) || 'texas';
   travel(first);
   renderHUD();
-  G.paused = true;
-  acc = 0; last = performance.now();
+  setRate(true, 1);
   if (!resumed) {
     showModal({
       eyebrow: '1946', title: 'One pump, one country',
@@ -124,19 +124,31 @@ function start(resumed) {
   }
 }
 
-/* ---------- clock ---------- */
-let acc = 0, last = 0;
+/* ---------- clock ----------
+   On a timer, not on animation frames: a throttled tab must not stall the year. */
+let clockT = null;
+function schedule() {
+  clearTimeout(clockT);
+  if (G.paused || !G.s || G.s.over) return;
+  clockT = setTimeout(step, SPEEDS[G.rate] || 2600);
+}
+function step() {
+  if (modalBusy()) { clockT = setTimeout(step, 250); return; }
+  SFX.year(); turn(); schedule();
+}
+export function setRate(paused, rate) {
+  G.paused = paused;
+  if (rate != null) G.rate = rate;
+  renderHUD();
+  schedule();
+}
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(400, now - last); last = now;
   if (UI.field) UI.field.draw(now);
-  if (G.paused || modalBusy() || !G.s || G.s.over) return;
-  acc += dt;
-  if (acc >= SPEED) { acc = 0; SFX.year(); turn(); }
 }
 function nextYear() {
   if (!G.s || G.s.over || modalBusy()) return;
-  acc = 0; SFX.year(); turn();
+  SFX.year(); turn(); schedule();
 }
 
 /* ---------- wiring ---------- */
@@ -147,22 +159,23 @@ function wire() {
   });
   $('#globe').onclick = () => { SFX.tap(); openPanel('world'); };
   $('#panel-scrim').onclick = closePanel;
+  /* one button, the way the original does it: play, faster, fastest, stop */
   $('#r-play').onclick = () => {
-    if (G.paused) { G.paused = false; renderHUD(); }
-    else { G.paused = true; renderHUD(); }
+    if (G.paused) setRate(false, 1);
+    else if (G.rate < 3) setRate(false, G.rate + 1);
+    else setRate(true, 1);
   };
-  $('#r-play').ondblclick = nextYear;
   addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') return;
-    if (e.code === 'Space') { e.preventDefault(); G.paused = !G.paused; renderHUD(); }
+    if (e.code === 'Space') { e.preventDefault(); setRate(!G.paused, G.rate); }
     if (e.key === 'Enter' || e.key === 'n') nextYear();
     if (e.key === 'Escape') { closePanel(); UI.armed = null; if (UI.field) UI.field.armed = null; renderHUD(); }
     if (e.key === 'a') openPanel('actions');
     if (e.key === 'w') openPanel('world');
   });
 
-  bus.on('turn', (s) => { renderHUD(); if (s.turn % 3 === 0) save(); });
-  bus.on('refresh', () => renderHUD());
+  bus.on('turn', (s) => { renderHUD(); yearTick(s); if (UI.panel) renderPanel(UI.panel); if (s.turn % 3 === 0) save(); });
+  bus.on('refresh', () => { renderHUD(); if (UI.panel) renderPanel(UI.panel); });
   bus.on('cfg', () => saveCfg());
   bus.on('event', (card) => {
     SFX.news();
@@ -187,12 +200,14 @@ function wire() {
     (passed === !!act.pro) ? SFX.cash() : SFX.bad();
     toast((passed ? 'PASSED ' : 'DEFEATED ') + yes + '-' + (10 - yes) + ': ' + act.name, (passed === !!act.pro) ? 'good' : 'bad');
   });
+  bus.on('holdClock', () => { if (!G.paused) setRate(true, G.rate); });
   bus.on('campaign', () => {
     SFX.news();
+    setRate(true, G.rate);
     const c = G.s.campaign;
     showModal({
       eyebrow: 'Campaign season', title: 'Two runners, one chair',
-      text: c.e.name + ' against ' + c.d.name + '. The polls open in two years and donations are legal in every way that matters. Back the likely winner, hedge the other, and remember that what you give the winner decides how oily the next administration will be.',
+      text: c.e.name + ' against ' + c.d.name + '. The polls open in three years and donations are legal in every way that matters. Back the likely winner, hedge the other, and remember that what you give the winner decides how oily the next administration will be.',
       buttons: [{ label: 'Go to Washington', cls: 'primary', run: () => openPanel('washington') }, { label: 'Later', run: () => { } }]
     });
   });
@@ -238,7 +253,7 @@ function wire() {
     });
   });
   bus.on('abandon', () => { wipeSave(); backToTitle(); });
-  addEventListener('visibilitychange', () => { if (document.hidden) { save(); G.paused = true; renderHUD(); } });
+  addEventListener('visibilitychange', () => { if (document.hidden) { save(); setRate(true, G.rate); } });
   addEventListener('pagehide', () => save());
 }
 
@@ -252,6 +267,11 @@ function backToTitle() {
 
 wire();
 renderTitle();
-requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
-if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
+requestAnimationFrame(frame);
+/* the offline cache is for the published game; on localhost it only hides edits */
+const LOCAL = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+if ('serviceWorker' in navigator) {
+  if (LOCAL) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => { });
+  else addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
+}
 window.__CAP = { G, bus, turn, SIM, UI, renderHUD, nextYear };

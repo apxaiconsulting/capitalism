@@ -113,7 +113,23 @@ export class Field {
     this.colW = Math.max(52, this.w / (this.w < 560 ? 7.5 : this.w < 900 ? 11 : 14));
     this.clampPan();
   }
-  setPlace(id) { this.id = id; this.sel = -1; this.pan = 0; this.resize(); }
+  setPlace(id) {
+    this.id = id; this.sel = -1; this.pan = 0;
+    this.resize();
+    this.centerOnWork();
+  }
+  /* open the view where the player actually has something, not on blank ground */
+  centerOnWork() {
+    const sc = this.scene; if (!sc) return;
+    let cols = [];
+    sc.rigs.forEach((r, i) => { if (r) cols.push(i); });
+    if (!cols.length) sc.pools.forEach(pl => { if (pl.found) cols.push(Math.round(pl.x)); });
+    if (!cols.length) sc.seen.forEach((v, i) => { if (v) cols.push(i); });
+    if (!cols.length) { this.clampPan(); return; }
+    const mid = cols.reduce((a, b) => a + b, 0) / cols.length;
+    this.pan = this.w / 2 - (mid + 0.5) * this.colW;
+    this.clampPan();
+  }
   clampPan() {
     const sc = this.scene; if (!sc) return;
     const total = sc.cols * this.colW;

@@ -68,6 +68,17 @@ function nextModal() {
   function close() { root.className = ''; setTimeout(nextModal, 60); }
 }
 
+/* a year ticking past should be visible, and so should the money */
+export function yearTick(s) {
+  const y = $('#r-year');
+  y.classList.remove('tick'); void y.offsetWidth; y.classList.add('tick');
+  const net = s.stats.lastNet || 0;
+  if (Math.abs(net) < 0.5) return;
+  const f = el('div', 'float ' + (net >= 0 ? 'pos' : 'neg'), money(net, true));
+  $('#stage').appendChild(f);
+  setTimeout(() => f.remove(), 1500);
+}
+
 /* ---------- HUD ---------- */
 export function renderHUD() {
   const s = G.s; if (!s) return;
@@ -76,8 +87,10 @@ export function renderHUD() {
   $('#r-add').textContent = Math.round(s.addiction * 100) + '%';
   $('#r-gdp').textContent = '$' + num(s.price, 2);
   $('#r-year').textContent = s.year;
-  $('#r-play').className = 'r-play' + (G.paused ? '' : ' running');
-  $('#r-play').innerHTML = G.paused ? '&#9654;' : '&#10073;&#10073;';
+  const pb = $('#r-play');
+  pb.className = 'r-play' + (G.paused ? '' : ' running');
+  pb.innerHTML = G.paused ? '&#9654;' : ['', '&#9654;', '&#9654;&#9654;', '&#9654;&#9654;&#9654;'][G.rate || 1];
+  pb.title = G.paused ? 'Run the clock' : 'Faster';
 
   const d = s.demand || demandOf(s), p = s.production || 0;
   const max = Math.max(d, p, 1) * 1.18;
@@ -88,7 +101,6 @@ export function renderHUD() {
   $('#vg-note').textContent = mb(p) + ' / ' + mb(d);
   $('#globe-label').textContent = PLACE[UI.place] ? PLACE[UI.place].name.toUpperCase() : 'WORLD';
   $('#globe').classList.toggle('alert', !!(s.campaign || s.agenda.length || s.crisisYears));
-  if (UI.panel) renderPanel(UI.panel);
   renderArmed();
 }
 
@@ -108,6 +120,8 @@ export function closePanel() {
   $('#panel-scrim').classList.remove('on');
 }
 export function openPanel(which) {
+  /* reading is not a turn: the clock waits while a panel is open */
+  bus.emit('holdClock');
   UI.panel = which;
   $('#panel').classList.add('open');
   $('#panel-scrim').classList.add('on');
@@ -118,7 +132,8 @@ function head(title, extra = '') {
 }
 
 export function renderPanel(which) {
-  const s = G.s, box = $('#panel-in');
+  const s = G.s, box = $('#panel-in'), pane = $('#panel');
+  const keep = pane ? pane.scrollTop : 0;
   if (which === 'actions') box.innerHTML = head('Actions') + actionsHTML(s);
   else if (which === 'world') box.innerHTML = head('The world') + worldHTML(s);
   else if (which === 'washington') box.innerHTML = head('Washington') + washingtonHTML(s);
@@ -126,13 +141,15 @@ export function renderPanel(which) {
   else box.innerHTML = head('Menu') + menuHTML(s);
   box.querySelector('.x').onclick = closePanel;
   wire(which);
+  if (pane) pane.scrollTop = keep;
 }
 
 function actionsHTML(s) {
   const id = UI.place, ps = s.places[id];
   if (!ps.open) return '<div class="empty">You do not operate here. Open it from the globe.</div>';
   const list = Object.entries(ACTIONS).filter(([k, a]) => !a.locked || s.flags[a.locked]);
-  return '<div class="actrow">' + list.map(([k, a]) => {
+  const hasPeople = ps.scene && ps.scene.ground.some(g => g.t === 'town' || g.t === 'village');
+  return '<div class="actrow">' + list.filter(([k]) => k !== 'buyout' || hasPeople).map(([k, a]) => {
     const cost = k === 'demolish' ? 0 : costOf(a.cost, id);
     const poor = cost > s.cash;
     return `<button class="actbtn ${UI.armed === k ? 'on' : ''}" data-act="${k}" ${poor ? 'disabled' : ''}>
@@ -174,8 +191,8 @@ function washingtonHTML(s) {
       <div class="lane e"><i style="width:${clamp(c.poll * 70 + c.donE / 40, 5, 100)}%"></i><span>&#128024; ${esc(c.e.name)}</span><em>${money(c.donE)}</em></div>
       <div class="lane d"><i style="width:${clamp((1 - c.poll) * 70 + c.donD / 40, 5, 100)}%"></i><span>&#128052; ${esc(c.d.name)}</span><em>${money(c.donD)}</em></div>
     </div>
-    <div class="row" style="gap:6px;flex-wrap:wrap">${[100, 300, 700].map(a => `<button class="btn sm don" data-side="e" data-amt="${a}">&#128024; +${money(a)}</button>`).join('')}</div>
-    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${[100, 300, 700].map(a => `<button class="btn sm don" data-side="d" data-amt="${a}">&#128052; +${money(a)}</button>`).join('')}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${[100, 300, 700].map(a => `<button class="btn sm don" data-side="e" data-amt="${a}" ${s.cash < a ? 'disabled' : ''}>&#128024; +${money(a)}</button>`).join('')}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${[100, 300, 700].map(a => `<button class="btn sm don" data-side="d" data-amt="${a}" ${s.cash < a ? 'disabled' : ''}>&#128052; +${money(a)}</button>`).join('')}</div>
     <small class="muted">Back the likely winner, hedge the other. What the winner takes from you sets the next administration's oiliness.</small>
   </div>` : `<div class="card"><h3>Next election <span class="tagn">${s.electionIn} years</span></h3></div>`}
 
