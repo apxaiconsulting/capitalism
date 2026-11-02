@@ -518,3 +518,55 @@ canvas.spark{width:100%;height:110px;display:block}
 
 /* the last screen is the scene and the words, nothing else */
 #app.ending .topbar,#app.ending .globe,#app.ending .readout,#app.ending .vgauge,#app.ending #ticker,#app.ending .armed{display:none}
+
+
+/* ============ landscape on a phone: short and wide ============ */
+@media (max-height:470px){
+  .pill{padding:5px 11px;font-size:10.5px;min-height:31px;border-radius:0 0 10px 10px}
+  .pill.big{padding:5px 17px}
+  .globe{width:58px;height:58px;border-width:2px;left:8px;bottom:calc(8px + var(--safe-b));padding-bottom:4px}
+  .globe small{font-size:7.5px;padding:1px 5px;max-width:52px}
+  .globe-face{inset:4px}
+  .readout{
+    right:8px;bottom:calc(8px + var(--safe-b));gap:7px;padding:5px 6px 5px 10px;border-radius:11px;
+    max-width:calc(100vw - 96px)
+  }
+  .r-item{font-size:11.5px}
+  .r-item i{font-size:10.5px}
+  .r-year{font-size:13px}
+  .r-play{width:32px;height:32px;border-radius:9px;font-size:12px}
+  .vgauge{top:calc(44px + var(--safe-t));bottom:58px;width:26px;right:10px;gap:3px}
+  .vg-track{width:15px}
+  .vgauge small{font-size:8.5px;padding:0 4px}
+  .ticker{top:calc(40px + var(--safe-t));font-size:11px;padding:4px 10px;max-width:72vw}
+  .armed{bottom:calc(54px + var(--safe-b));padding:5px 12px;font-size:11.5px}
+  .float{bottom:52px;right:104px;font-size:13px}
+  /* a side sheet, so the field stays visible while you work */
+  .panel{
+    left:auto;right:0;top:0;bottom:0;width:min(360px,62vw);max-height:none;border-radius:16px 0 0 16px;
+    border-left:1px solid var(--line2);border-top:0;padding:10px 14px calc(14px + var(--safe-b))
+  }
+  .modal{max-height:92vh;padding:14px}
+  .modal h2{font-size:17px;margin:4px 0 6px}
+  .modal p{font-size:13px;margin-bottom:9px}
+  .choice{padding:9px 11px;min-height:38px}
+  .modal.ending h2{font-size:19px}
+  .epi{font-size:12px;padding:4px 0 4px 10px}
+}
+
+/* ============ turn the phone ============ */
+#rotate{
+  position:fixed;inset:0;z-index:95;display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;background:#0a0c10;text-align:center;padding:30px
+}
+#rotate .ph{
+  width:62px;height:104px;border:3px solid var(--amber);border-radius:12px;position:relative;
+  animation:tilt 2s ease-in-out infinite
+}
+#rotate .ph:after{content:'';position:absolute;left:50%;bottom:7px;width:18px;height:3px;background:var(--amber);transform:translateX(-50%);border-radius:2px}
+@keyframes tilt{0%,38%{transform:rotate(0)}62%,100%{transform:rotate(-90deg)}}
+#rotate b{font-size:17px;letter-spacing:-.01em}
+#rotate small{color:var(--ink2);font-size:13px;max-width:28ch;line-height:1.5}
+@media (max-width:820px) and (orientation:portrait){
+  body:not(.ignore-rotate) #rotate{display:flex}
+}

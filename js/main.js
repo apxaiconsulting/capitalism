@@ -284,6 +284,17 @@ function backToTitle() {
   renderTitle();
 }
 
+const skip = $('#rotate-skip');
+if (skip) skip.onclick = () => {
+  document.body.classList.add('ignore-rotate');
+  if (UI.field) { UI.field.resize(); UI.field.centerOnWork(); }
+};
+/* a rotation changes everything about the view */
+addEventListener('orientationchange', () => setTimeout(() => {
+  if (UI.field) { UI.field.resize(); UI.field.centerOnWork(); }
+  renderHUD();
+}, 220));
+
 wire();
 renderTitle();
 requestAnimationFrame(frame);

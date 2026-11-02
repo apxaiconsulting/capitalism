@@ -121,7 +121,8 @@ export class Field {
     this.cv.width = Math.max(1, Math.round(r.width * this.dpr));
     this.cv.height = Math.max(1, Math.round(r.height * this.dpr));
     this.w = r.width; this.h = r.height;
-    this.colW = Math.max(52, this.w / (this.w < 560 ? 7.5 : this.w < 900 ? 11 : 14));
+    const wide = this.w > this.h * 1.5;
+    this.colW = Math.max(46, this.w / (this.w < 560 ? 7.5 : this.w < 900 ? (wide ? 12.5 : 11) : wide ? 15 : 14));
     this.clampPan();
   }
   /* a gusher, or anything else worth a moment of spectacle */
@@ -182,7 +183,7 @@ export class Field {
   }
 
   /* geometry */
-  get horizon() { return this.h * 0.44; }
+  get horizon() { return this.h * (this.h < 460 && this.w > this.h * 1.5 ? 0.36 : 0.44); }
   surfaceY(col) {
     const sc = this.scene, g = sc.ground[clamp(col, 0, sc.cols - 1)];
     return this.horizon + (1 - g.h) * this.h * 0.1;

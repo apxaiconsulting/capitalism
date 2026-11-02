@@ -1,5 +1,5 @@
 /* Capitalism service worker - bump VERSION on every deploy */
-const VERSION = 'capitalism-v3';
+const VERSION = 'capitalism-v4';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './css/main.css',
